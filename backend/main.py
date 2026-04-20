@@ -243,7 +243,10 @@ def analyze_ats_with_ai(cv_text: str, jd_text: str):
         input=[
             {
                 "role": "system",
-                "content": "You are an ATS resume analysis assistant. Return only valid JSON.",
+                "content": (
+                    "You are an ATS resume analysis assistant. "
+                    "Return only valid JSON."
+                ),
             },
             {
                 "role": "user",
@@ -252,10 +255,14 @@ def analyze_ats_with_ai(cv_text: str, jd_text: str):
                     "Return:\n"
                     "- match_score (0 to 100)\n"
                     "- missing_keywords (array)\n"
-                    "- strengths (array)\n"
-                    "- improvements (array)\n"
-                    "- summary (2-3 sentences)\n\n"
-                    "Do not invent experience not present in the resume.\n\n"
+                    "- improvements (array)\n\n"
+                    "Rules:\n"
+                    "- missing_keywords must contain at most 10 items.\n"
+                    "- Only include highly important keywords or requirements that are genuinely critical for the target role.\n"
+                    "- Do not add random or weak keywords.\n"
+                    "- Prioritize skills, tools, certifications, platforms, and domain requirements that strongly affect ATS screening.\n"
+                    "- improvements should be practical and concise.\n"
+                    "- Do not invent experience not present in the resume.\n\n"
                     f"Resume Text:\n{cv_text}\n\n"
                     f"Job Description:\n{jd_text}"
                 ),
@@ -272,23 +279,17 @@ def analyze_ats_with_ai(cv_text: str, jd_text: str):
                         "missing_keywords": {
                             "type": "array",
                             "items": {"type": "string"},
-                        },
-                        "strengths": {
-                            "type": "array",
-                            "items": {"type": "string"},
+                            "maxItems": 10,
                         },
                         "improvements": {
                             "type": "array",
                             "items": {"type": "string"},
                         },
-                        "summary": {"type": "string"},
                     },
                     "required": [
                         "match_score",
                         "missing_keywords",
-                        "strengths",
                         "improvements",
-                        "summary",
                     ],
                     "additionalProperties": False,
                 },
