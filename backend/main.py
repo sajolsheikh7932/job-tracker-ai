@@ -173,7 +173,6 @@ def upload_to_supabase_storage(filename: str, file_bytes: bytes, content_type: s
             },
         )
     except Exception:
-        # If storage upload fails for client version mismatch, still keep DB workflow usable
         path = f"local-skip/{unique_name}"
 
     return path
@@ -244,26 +243,25 @@ def analyze_ats_with_ai(cv_text: str, jd_text: str):
             {
                 "role": "system",
                 "content": (
-                    "You are an ATS resume analysis assistant. "
+                    "You are a senior ATS (Applicant Tracking System) resume screening expert. "
+                    "Your job is to identify critical gaps between a candidate's resume and the target job description. "
                     "Return only valid JSON."
                 ),
             },
             {
                 "role": "user",
                 "content": (
-                    "Compare the resume text against the job description.\n"
-                    "Return:\n"
-                    "- match_score (0 to 100)\n"
-                    "- missing_keywords (array)\n"
-                    "- improvements (array)\n\n"
-                    "Rules:\n"
-                    "- missing_keywords must contain at most 10 items.\n"
-                    "- Only include highly important keywords or requirements that are genuinely critical for the target role.\n"
-                    "- Do not add random or weak keywords.\n"
-                    "- Prioritize skills, tools, certifications, platforms, and domain requirements that strongly affect ATS screening.\n"
-                    "- improvements should be practical and concise.\n"
-                    "- Do not invent experience not present in the resume.\n\n"
-                    f"Resume Text:\n{cv_text}\n\n"
+                    "Carefully analyze the resume against the job description and return:\n"
+                    "- match_score (integer 0–100): How well the resume matches this specific role.\n"
+                    "- missing_keywords (array, max 10): ONLY the most critical keywords the resume lacks.\n"
+                    "  Rules for missing_keywords:\n"
+                    "  * Only include skills, tools, certifications, platforms, or domain terms that are explicitly required or strongly preferred in the JD.\n"
+                    "  * Prioritize hard requirements over soft skills.\n"
+                    "  * Do NOT include keywords already present (even implicitly) in the resume.\n"
+                    "  * Do NOT include vague terms like 'communication' or 'teamwork'.\n"
+                    "  * Maximum 10 items — only the ones that matter most for ATS screening.\n"
+                    "- improvements (array, 3–5 items): Concrete, actionable suggestions the candidate can implement to improve their resume for this specific role. Each suggestion should be specific, not generic.\n\n"
+                    f"Resume:\n{cv_text}\n\n"
                     f"Job Description:\n{jd_text}"
                 ),
             },
@@ -306,31 +304,40 @@ def generate_application_docs_with_ai(cv_text: str, jd_text: str):
             {
                 "role": "system",
                 "content": (
-                    "You are a professional ATS resume and cover letter writer. "
-                    "Return only valid JSON. "
-                    "Never fabricate experience, employers, dates, degrees, certifications, tools, or metrics. "
-                    "You may improve wording, ordering, formatting, summaries, and keyword alignment only when supported by the candidate's actual background."
+                    "You are an elite professional resume writer and career coach who specializes in helping candidates land interviews at competitive companies. "
+                    "Your resumes are crafted to pass ATS systems and impress hiring committees simultaneously. "
+                    "You write with precision, impact, and authenticity — never fabricating facts. "
+                    "Return only valid JSON."
                 ),
             },
             {
                 "role": "user",
                 "content": (
-                    "Using the candidate resume and job description, create:\n"
-                    "1. a complete ATS-friendly tailored resume text\n"
-                    "2. a tailored cover letter\n"
-                    "3. a list of ATS keywords that were emphasized\n\n"
-                    "Resume rewriting rules:\n"
-                    "- Keep it truthful.\n"
-                    "- Improve ATS alignment.\n"
-                    "- Include relevant keywords only if supported by the existing resume.\n"
-                    "- Return a complete rewritten resume, not bullet suggestions only.\n"
-                    "- Use clear section headings.\n\n"
-                    "Cover letter rules:\n"
-                    "- Professional and concise.\n"
-                    "- Tailored to the role.\n"
-                    "- No fake claims.\n\n"
-                    f"Resume Text:\n{cv_text}\n\n"
-                    f"Job Description:\n{jd_text}"
+                    "Using the candidate's resume and the target job description, produce:\n"
+                    "1. A complete ATS-optimized tailored resume (tailored_resume_text)\n"
+                    "2. A compelling, personalized cover letter (cover_letter_text)\n"
+                    "3. The ATS keywords that were strategically emphasized (ats_keywords)\n\n"
+                    "=== RESUME RULES ===\n"
+                    "- NEVER fabricate employers, job titles, dates, degrees, certifications, metrics, or tools.\n"
+                    "- Use ONLY information verifiably present in the original resume.\n"
+                    "- Rewrite the professional summary to directly address the target role — make it role-specific, confident, and keyword-rich.\n"
+                    "- Reorder and rephrase bullet points to front-load the most JD-relevant experience first.\n"
+                    "- Quantify achievements wherever the original resume provides numbers (keep original numbers, do not invent).\n"
+                    "- Use strong action verbs that align with the role (e.g., 'Engineered', 'Architected', 'Optimized', 'Spearheaded').\n"
+                    "- Embed JD keywords naturally — do not keyword-stuff.\n"
+                    "- Format: Contact Info → Professional Summary → Core Skills (pipe-separated) → Professional Experience → Education → Certifications.\n"
+                    "- Keep the resume scannable: clear section headers, consistent formatting, concise bullets.\n\n"
+                    "=== COVER LETTER RULES ===\n"
+                    "- Address 'Dear Hiring Committee' (professional and inclusive).\n"
+                    "- Opening paragraph: Reference the specific role and express genuine enthusiasm — avoid clichés like 'I am writing to apply'.\n"
+                    "- Body paragraph 1: Connect the candidate's most relevant experience directly to 2–3 key requirements from the JD. Be specific.\n"
+                    "- Body paragraph 2: Highlight a unique strength or accomplishment that differentiates the candidate from typical applicants.\n"
+                    "- Closing paragraph: Confident call to action. Express readiness to contribute and discuss further.\n"
+                    "- Tone: Professional, warm, and confident — not robotic or overly formal.\n"
+                    "- Length: 3–4 paragraphs, concise and impactful.\n"
+                    "- Never repeat the resume verbatim — complement it with narrative context.\n\n"
+                    f"Candidate Resume:\n{cv_text}\n\n"
+                    f"Target Job Description:\n{jd_text}"
                 ),
             },
         ],
