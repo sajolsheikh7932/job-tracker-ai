@@ -42,7 +42,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://your-vercel-app.vercel.app",
+        "https://job-tracker-ai-git-main-sajolsheikh7932s-projects.vercel.app/",
     ],
     allow_credentials=True,
     allow_methods=["*"],
