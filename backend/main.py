@@ -42,8 +42,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://job-tracker-ai-git-main-sajolsheikh7932s-projects.vercel.app/",
+        "https://job-tracker-ai-git-main-sajolsheikh7932s-projects.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -117,23 +118,45 @@ def get_current_user(authorization: Optional[str] = Header(default=None)):
 
 
 def parse_uploaded_file(filename: str, file_bytes: bytes) -> str:
-    lower = filename.lower()
+    lower = filename.lower().strip()
 
     if lower.endswith(".pdf"):
-        reader = PdfReader(io.BytesIO(file_bytes))
-        text_parts = []
-        for page in reader.pages:
-            text_parts.append(page.extract_text() or "")
-        return "\n".join(text_parts).strip()
+        try:
+            reader = PdfReader(io.BytesIO(file_bytes))
+            text_parts = []
+            for page in reader.pages:
+                text_parts.append(page.extract_text() or "")
+            text = "\n".join(text_parts).strip()
+
+            if not text:
+                raise ValueError("PDF was read, but no extractable text was found.")
+            return text
+        except Exception as e:
+            raise ValueError(f"PDF parsing failed: {str(e)}")
 
     if lower.endswith(".docx"):
-        doc = Document(io.BytesIO(file_bytes))
-        return "\n".join([p.text for p in doc.paragraphs]).strip()
+        try:
+            doc = Document(io.BytesIO(file_bytes))
+            text = "\n".join([p.text for p in doc.paragraphs]).strip()
+
+            if not text:
+                raise ValueError("DOCX was read, but no text was found.")
+            return text
+        except Exception as e:
+            raise ValueError(f"DOCX parsing failed: {str(e)}")
 
     if lower.endswith(".txt"):
-        return file_bytes.decode("utf-8", errors="ignore").strip()
+        try:
+            text = file_bytes.decode("utf-8", errors="ignore").strip()
+            if not text:
+                raise ValueError("TXT file is empty.")
+            return text
+        except Exception as e:
+            raise ValueError(f"TXT parsing failed: {str(e)}")
 
-    raise ValueError("Unsupported file type. Please upload PDF, DOCX, or TXT.")
+    raise ValueError(
+        f"Unsupported file type for '{filename}'. Please upload PDF, DOCX, or TXT."
+    )
 
 
 def upload_to_supabase_storage(filename: str, file_bytes: bytes, content_type: str) -> str:
